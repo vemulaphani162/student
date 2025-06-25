@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+   <meta charset="UTF-8">
+   <meta http-equiv="X-UA-Compatible" content="IE=edge">
+   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+   <title>courses</title>
+
+   <!-- font awesome cdn link  -->
+   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.1.2/css/all.min.css">
+
+   <!-- custom css file link  -->
+   <link rel="stylesheet" href="css/style.css">
+
+</head>
+<body>
+
+<header class="header">
+   
+   <section class="flex">
+
+      <a href="home.html" class="logo">Educa.</a>
+
+      <form action="search.html" method="post" class="search-form">
+         <input type="text" name="search_box" required placeholder="search courses..." maxlength="100">
+         <button type="submit" class="fas fa-search"></button>
+      </form>
+
+      <div class="icons">
+         <div id="menu-btn" class="fas fa-bars"></div>
+         <div id="search-btn" class="fas fa-search"></div>
+         <div id="user-btn" class="fas fa-user"></div>
+         <div id="toggle-btn" class="fas fa-sun"></div>
+      </div>
+
+      <div class="profile">
+         <img src="images/pic-1.jpg" class="image" alt="">
+         <h3 class="name">shaikh anas</h3>
+         <p class="role">studen</p>
+         <a href="profile.html" class="btn">view profile</a>
+         <div class="flex-btn">
+            <a href="login.html" class="option-btn">login</a>
+            <a href="register.html" class="option-btn">register</a>
+         </div>
+      </div>
+
+   </section>
+
+</header>   
+
+<div class="side-bar">
+
+   <div id="close-btn">
+      <i class="fas fa-times"></i>
+   </div>
+
+   <div class="profile">
+      <img src="images/pic-1.jpg" class="image" alt="">
+      <h3 class="name">shaikh anas</h3>
+      <p class="role">studen</p>
+      <a href="profile.html" class="btn">view profile</a>
+   </div>
+
+   <nav class="navbar">
+      <a href="home.html"><i class="fas fa-home"></i><span>home</span></a>
+      <a href="about.html"><i class="fas fa-question"></i><span>about</span></a>
+      <a href="courses.html"><i class="fas fa-graduation-cap"></i><span>courses</span></a>
+      <a href="teachers.html"><i class="fas fa-chalkboard-user"></i><span>teachers</span></a>
+      <a href="contact.html"><i class="fas fa-headset"></i><span>contact us</span></a>
+   </nav>
+
+</div>
+
+<section class="courses">
+
+   <h1 class="heading">our courses</h1>
+
+   <!-- This div will be populated dynamically by JavaScript -->
+   <div id="courses-list" class="box-container">
+      <p>Loading courses...</p>
+   </div>
+
+</section>
+
+<footer class="footer">
+
+   &copy; copyright @ 2022 by <span>mr. web designer</span> | all rights reserved!
+
+</footer>
+
+<!-- custom js file link  -->
+<script src="js/script.js"></script>
+
+<script>
+document.addEventListener('DOMContentLoaded', async () => {
+    const coursesListContainer = document.getElementById('courses-list');
+
+    // Function to fetch courses and user's enrollment status
+    const fetchCoursesAndEnrollments = async () => {
+        try {
+            // Fetch all courses from the backend API
+            const coursesResponse = await fetch('/api/courses');
+            if (!coursesResponse.ok) {
+                // If the response is not OK (e.g., 500 error), throw an error
+                throw new Error('Failed to fetch courses from the server.');
+            }
+            const courses = await coursesResponse.json(); // Parse the JSON response
+
+            // Fetch current user's enrollment status
+            let userEnrolledCourses = [];
+            try {
+                const userEnrollmentsResponse = await fetch('/api/current-user-enrollments');
+                if (userEnrollmentsResponse.ok) {
+                    const userData = await userEnrollmentsResponse.json();
+                    // Extract only the IDs of enrolled courses for quick lookup
+                    userEnrolledCourses = userData.enrolledCourses.map(course => course._id);
+                } else if (userEnrollmentsResponse.status === 401) {
+                    // User is not logged in, so no enrollment data will be available
+                    console.log('User not logged in. "Enroll Now" buttons will be visible.');
+                } else {
+                    // Log other errors when fetching user enrollments
+                    console.error('Error fetching user enrollments:', await userEnrollmentsResponse.text());
+                }
+            } catch (error) {
+                // Handle network errors during enrollment status fetch
+                console.error('Network error fetching user enrollments:', error);
+            }
+
+            coursesListContainer.innerHTML = ''; // Clear the "Loading courses..." message
+
+            if (courses.length === 0) {
+                // Display a message if no courses are available
+                coursesListContainer.innerHTML = '<p>No courses available at the moment.</p>';
+                return;
+            }
+
+            // Iterate over each course and create its HTML box
+            courses.forEach(course => {
+                const isEnrolled = userEnrolledCourses.includes(course._id); // Check if the current user is enrolled
+                const courseBox = document.createElement('div');
+                courseBox.classList.add('box'); // Apply existing CSS styling
+
+                // Determine tutor name and image path; use defaults if data is missing
+                const tutorName = course.tutor ? course.tutor.name : 'Unknown Tutor';
+                const tutorImage = course.tutor && course.tutor.profileImagePath ? course.tutor.profileImagePath : 'images/pic-2.jpg';
+
+                courseBox.innerHTML = `
+                    <div class="tutor">
+                        <img src="${tutorImage}" alt="">
+                        <div class="info">
+                            <h3>${tutorName}</h3>
+                            <span>${new Date(course.createdAt).toLocaleDateString()}</span>
+                        </div>
+                    </div>
+                    <div class="thumb">
+                        <img src="${course.thumbnail}" alt="${course.title}">
+                        <span>${course.videos.length} videos</span>
+                    </div>
+                    <h3 class="title">${course.title}</h3>
+                    <!-- "View Playlist" button: visible if enrolled, hidden otherwise -->
+                    <a href="playlist.html?courseId=${course._id}" class="inline-btn view-playlist-btn" style="display: ${isEnrolled ? 'inline-block' : 'none'};">View Playlist</a>
+                    <!-- "Enroll Now" button: visible if NOT enrolled, hidden otherwise -->
+                    <button class="inline-btn enroll-btn" data-course-id="${course._id}" style="display: ${isEnrolled ? 'none' : 'inline-block'};">Enroll Now</button>
+                `;
+                coursesListContainer.appendChild(courseBox);
+            });
+
+            // Add event listener for the enroll buttons using event delegation
+            coursesListContainer.addEventListener('click', async (event) => {
+                if (event.target.classList.contains('enroll-btn')) {
+                    const courseId = event.target.dataset.courseId; // Get the course ID from the button's data attribute
+                    try {
+                        // Send an enrollment request to the backend
+                        const enrollResponse = await fetch('/enroll-course', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({ courseId: courseId })
+                        });
+
+                        const data = await enrollResponse.json(); // Parse the response from the backend
+
+                        if (enrollResponse.ok) {
+                            alert(data.message); // Show success message
+                            // Update the UI immediately: hide Enroll button, show View Playlist button
+                            event.target.style.display = 'none';
+                            const viewPlaylistBtn = event.target.previousElementSibling;
+                            if (viewPlaylistBtn && viewPlaylistBtn.classList.contains('view-playlist-btn')) {
+                                viewPlaylistBtn.style.display = 'inline-block';
+                            }
+                        } else {
+                            // Handle enrollment failure
+                            alert('Enrollment failed: ' + data.message);
+                            if (enrollResponse.status === 401) {
+                                // If 401 (Unauthorized), redirect to login page
+                                window.location.href = '/login.html?message=please_login_to_enroll';
+                            }
+                        }
+                    } catch (error) {
+                        // Handle network or other unexpected errors during enrollment
+                        console.error('Error during enrollment:', error);
+                        alert('Network or server error during enrollment. Please try again.');
+                    }
+                }
+            });
+
+        } catch (error) {
+            console.error('Error fetching courses:', error);
+            coursesListContainer.innerHTML = '<p>Failed to load courses. Please check your server and network connection.</p>';
+        }
+    };
+
+    fetchCoursesAndEnrollments(); // Call the function to load courses when the page loads
+});
+</script>
+   
+</body>
+</html>

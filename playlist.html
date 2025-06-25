@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+   <meta charset="UTF-8">
+   <meta http-equiv="X-UA-Compatible" content="IE=edge">
+   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+   <title>video playlist</title>
+
+   <!-- font awesome cdn link  -->
+   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.1.2/css/all.min.css">
+
+   <!-- custom css file link  -->
+   <link rel="stylesheet" href="css/style.css">
+
+</head>
+<body>
+
+<header class="header">
+   
+   <section class="flex">
+
+      <a href="home.html" class="logo">Educa.</a>
+
+      <form action="search.html" method="post" class="search-form">
+         <input type="text" name="search_box" required placeholder="search courses..." maxlength="100">
+         <button type="submit" class="fas fa-search"></button>
+      </form>
+
+      <div class="icons">
+         <div id="menu-btn" class="fas fa-bars"></div>
+         <div id="search-btn" class="fas fa-search"></div>
+         <div id="user-btn" class="fas fa-user"></div>
+         <div id="toggle-btn" class="fas fa-sun"></div>
+      </div>
+
+      <div class="profile">
+         <img src="images/pic-1.jpg" class="image" alt="">
+         <h3 class="name">shaikh anas</h3>
+         <p class="role">studen</p>
+         <a href="profile.html" class="btn">view profile</a>
+         <div class="flex-btn">
+            <a href="login.html" class="option-btn">login</a>
+            <a href="register.html" class="option-btn">register</a>
+         </div>
+      </div>
+
+   </section>
+
+</header>   
+
+<div class="side-bar">
+
+   <div id="close-btn">
+      <i class="fas fa-times"></i>
+   </div>
+
+   <div class="profile">
+      <img src="images/pic-1.jpg" class="image" alt="">
+      <h3 class="name">shaikh anas</h3>
+      <p class="role">studen</p>
+      <a href="profile.html" class="btn">view profile</a>
+   </div>
+
+   <nav class="navbar">
+      <a href="home.html"><i class="fas fa-home"></i><span>home</span></a>
+      <a href="about.html"><i class="fas fa-question"></i><span>about</span></a>
+      <a href="courses.html"><i class="fas fa-graduation-cap"></i><span>courses</span></a>
+      <a href="teachers.html"><i class="fas fa-chalkboard-user"></i><span>teachers</span></a>
+      <a href="contact.html"><i class="fas fa-headset"></i><span>contact us</span></a>
+   </nav>
+
+</div>
+
+<section class="playlist-details">
+
+   <h1 class="heading">playlist details</h1>
+
+   <div class="row">
+      <!-- Content here will be dynamically loaded by JavaScript -->
+      <p id="playlist-details-loading">Loading playlist details...</p>
+   </div>
+
+</section>
+
+<section class="playlist-videos">
+
+   <h1 class="heading">playlist videos</h1>
+
+   <!-- Videos will be dynamically loaded here by JavaScript -->
+   <div id="playlist-videos-container" class="box-container">
+      <p>Loading videos...</p>
+   </div>
+
+</section>
+
+
+
+
+<footer class="footer">
+
+   &copy; copyright @ 2022 by <span>mr. web designer</span> | all rights reserved!
+
+</footer>
+
+<!-- custom js file link  -->
+<script src="js/script.js"></script>
+
+<script>
+document.addEventListener('DOMContentLoaded', async () => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const courseId = urlParams.get('courseId'); // Get the courseId from the URL query parameter
+
+    const playlistDetailsContainer = document.getElementById('playlist-details-loading');
+    const playlistVideosContainer = document.getElementById('playlist-videos-container');
+
+    if (!courseId) {
+        playlistDetailsContainer.innerHTML = '<p class="error-message">Error: No course ID provided in the URL.</p>';
+        playlistVideosContainer.innerHTML = '<p class="error-message">Cannot load playlist without a course ID.</p>';
+        return;
+    }
+
+    try {
+        // Fetch playlist details and enrollment status from the backend
+        const response = await fetch(`/api/playlist/${courseId}`);
+        const data = await response.json();
+
+        if (response.ok) {
+            // User is enrolled or course details are successfully fetched
+            const course = data.course;
+            const videos = data.videos;
+
+            // Update playlist details section
+            playlistDetailsContainer.innerHTML = `
+                <div class="column">
+                    <form action="" method="post" class="save-playlist">
+                        <button type="submit"><i class="far fa-bookmark"></i> <span>save playlist</span></button>
+                    </form>
+            
+                    <div class="thumb">
+                        <img src="${course.thumbnail}" alt="${course.title}">
+                        <span>${videos.length} videos</span>
+                    </div>
+                </div>
+                <div class="column">
+                    <div class="tutor">
+                        <img src="${course.tutor && course.tutor.profileImagePath ? course.tutor.profileImagePath : 'images/pic-2.jpg'}" alt="">
+                        <div>
+                            <h3>${course.tutor && course.tutor.name ? course.tutor.name : 'Unknown Tutor'}</h3>
+                            <span>${new Date(course.createdAt).toLocaleDateString()}</span>
+                        </div>
+                    </div>
+            
+                    <div class="details">
+                        <h3>${course.title}</h3>
+                        <p>${course.description || 'No description available.'}</p>
+                        <a href="teacher_profile.html?tutorId=${course.tutor._id}" class="inline-btn">view profile</a>
+                    </div>
+                </div>
+            `;
+
+            // Update playlist videos section
+            if (videos.length > 0) {
+                playlistVideosContainer.innerHTML = ''; // Clear loading message
+                videos.forEach(video => {
+                    const videoBox = document.createElement('a');
+                    videoBox.classList.add('box');
+                    videoBox.href = `watch-video.html?videoId=${video._id || 'some-id'}`; // Assuming videos will eventually have IDs
+                    videoBox.innerHTML = `
+                        <i class="fas fa-play"></i>
+                        <img src="images/post-1-1.png" alt=""> <!-- Placeholder image for videos -->
+                        <h3>${video.title}</h3>
+                    `;
+                    playlistVideosContainer.appendChild(videoBox);
+                });
+            } else {
+                playlistVideosContainer.innerHTML = '<p class="empty">No videos found in this playlist.</p>';
+            }
+
+        } else if (response.status === 403) {
+            // User is not enrolled
+            playlistDetailsContainer.innerHTML = `<p class="error-message">${data.message}</p>`;
+            playlistVideosContainer.innerHTML = `<p class="error-message">Please enroll in this course to view the video content.</p>
+                                                <div style="text-align: center; margin-top: 2rem;">
+                                                    <a href="courses.html" class="inline-option-btn">View All Courses</a>
+                                                </div>`;
+        } else if (response.status === 401) {
+            // User is not authenticated/logged in
+            alert('You need to be logged in to view this playlist. Redirecting to login page.');
+            window.location.href = '/login.html?message=please_login_to_view_playlist';
+        } else {
+            // Other server errors
+            playlistDetailsContainer.innerHTML = `<p class="error-message">Error: ${data.message || 'Failed to load playlist.'}</p>`;
+            playlistVideosContainer.innerHTML = '<p class="error-message">Please try again later.</p>';
+        }
+    } catch (error) {
+        console.error('Network or parsing error:', error);
+        playlistDetailsContainer.innerHTML = '<p class="error-message">Network error. Failed to connect to the server.</p>';
+        playlistVideosContainer.innerHTML = '<p class="error-message">Please check your internet connection and try again.</p>';
+    }
+});
+</script>
+   
+</body>
+</html>
